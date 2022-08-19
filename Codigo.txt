@@ -1,4 +1,18 @@
-% Simulación de parámetros
+% VLC LOS CHANNEL
+
+% Funcion para el calculo del canal LOS lambertiano
+% El valor de entrada es la potencia en watios recibida de la luminaria
+%La potecia de salida es la potecia despues del canal del vector
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Canal LOS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clc; clear all; close all;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% -----------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Parametros de simulacion
 BW = 20*10^6; % 20 MHz
 No = 10^-22; % A/Hz [Haas]
 N = (No*BW)/2;
@@ -9,20 +23,25 @@ Pled_dB = 10;
 Pled = 10^(Pled_dB*0.1);
 
 %------------------------------------------
-% Concentrador óptico y filtro
+% Concentrador optico y filtro
 % -----------------------------------------
-tsfilter = 1; 
-csilimitdegree = 75; 
+tsfilter = 1; %ganancia del filtro optico 1 Ts(psi)
+csilimitdegree = 75; %limite del angulo del filtro del concentrador
 csilimit = csilimitdegree;
-n = 1; 
+n = 1; %indice del filtro concentrador
 
 IO=0.73;%Intensidad luminosa
 IOt=60*60*IO;%Intensidad luminosa total
+%----------------------------------------------
+% 
+%---------------------------------------------
 
 x=2; y=5; z=4; %Dimensiones entorno
 %donde el centro del techo es(0,0,0) 
 
+%Escenario de simulacion basico
 %Matriz posicion tranceptores
+
 %Ambiente 2: 5 luminarias en fila
 %         x y z
 % mtrxlxy=[  0  2  5;
@@ -33,9 +52,12 @@ x=2; y=5; z=4; %Dimensiones entorno
 %           ];
 
 %Ambiente 1: 4 luminarias en matriz 2x2      
+%para ver el ambiente 1 elimine el "%" de las siguientese dos lineas
 
 mtrxlxy=[-0.5 -1.25  4; 0.5  1.25  4; 0.5 -1.25  4; -0.5  1.25  4]; 
+
 %mtrxlxy=[0,0,4]; %Modelo para una luminaria ubicada en el centro
+
 %x=2; y=5; z=5.7; %Dimensiones entorno  
 
 %Puede realizar el estudio para cualquier cantidad de luminarias 
@@ -45,37 +67,38 @@ mtrxlxy=[-0.5 -1.25  4; 0.5  1.25  4; 0.5 -1.25  4; -0.5  1.25  4];
 % Receptor 
 %-----------------------------------------
 lzp=1; % Altura del receptor(z) 
-%Altura del casco del minero (transceptor p)
 
 ar= 0.001; %area receptor m^2 >>>(1 cm^2)
 resp = 1; %Fotodiodo de respuesta 1 por negligencia.
 smanglmdptnc = 70; % semiangulo a media potencia del LED
 fov=60;
 %ADR'S Angle diversity receiver
-%Para este estudio se realizara el modelo de receptor óptico
+
 adr=20;
-% adr=1 %Fotodiodo sencillo
+%adr=1 %Fotodiodo sencillo
 % adr=9 % adr coN 9 fotodiodos
 % adr=20 %adr con 20 fotodiodos
+
 %-----------------------------------------
 excttd=10;
-Nx = x*excttd; 
-Ny = y*excttd; 
+Nx = x*excttd; %Ex�ctitud malla en x 
+Ny = y*excttd; %Ex�ctitud malla en y
 X = -x/2:x/Nx:x/2; %Matiz X
 Y = -y/2:y/Ny:y/2; %Matriz Y 
-[rx,ry]=meshgrid(X,Y); 
+[rx,ry]=meshgrid(X,Y); %Generar malla 2D
 zslmnrs=size(mtrxlxy,1);
 d=[];
 c=physconst('LightSpeed');%Velocidad de la luz
 szmtrxlxy=size(mtrxlxy,1);
 for k=1:zslmnrs
-lxi=mtrxlxy(k,1); lyi=mtrxlxy(k,2); lzi=mtrxlxy(k,3); %Posicion de la luminaria (transceptor i) 
+lxi=mtrxlxy(k,1); lyi=mtrxlxy(k,2); lzi=mtrxlxy(k,3); %Posici�n de la luminaria (transceptor i) 
 d(:,:,k)= sqrt(((abs(rx)-lxi).^2)+((abs(ry)-lyi).^2)+((lzp-lzi)^2));
 %d(:,:,i)= sqrt(((rx-lxi).^2)+((ry-lyi).^2));
 %Matriz de distancia al fotodiodo
 
 end
-cosphi = (sqrt((lzi-lzp)^2)./d);
+
+cosphi = (sqrt((lzi-lzp)^2)./d);%angulo entre la normal al led y d
 phi=(acosd(cosphi));
 psi=90-phi;
 sinpsi2=sind(psi).^2;
@@ -83,18 +106,18 @@ cospsi=cosd(psi);
 % d: Matriz de distancia al fotodiodo
 
 if ( csilimit >= acos(cospsi)) %concentrador
-gcsi = n^2/(sind(csilimit))^2; 
+gcsi = n^2/(sind(csilimit))^2; %Funcion para el concentrador optico
 else %si el concentrador se excede, la señal no pasa atravez del canal LOS
 gcsi = 0;
 end
 
-%display('m Es el orden de emision lambertiana y está dado por el semiangulo a media potencia del LED');
+%display('m Es el orden de emision lambertiana y esta dado por el semiangulo a media potencia del LED');
 m= -log(2)/log(cosd(smanglmdptnc));
-% m1 Es el orden de emisión lambertiana y está dado por el 
+% m1 Es el orden de emision lambertiana y esta dado por el 
 % semiangulo a media potencia del LED
 
 %------------------------------------------------------------------------
-%MODELO DE PERDIDA DE RUTA (PATH LOSS MODEL)
+%MODELO DE PARDIDA DE RUTA (PATH LOSS MODEL)
 %------------------------------------------------------------------------
 
 szhloss=size(d,1);
@@ -102,11 +125,13 @@ szhloss2=size(d,2);
 H1ttl=ones(szhloss,szhloss2);
 prdctrcsphi=ones(szhloss,szhloss2);
 prdctrcspsi=ones(szhloss,szhloss2);
+
 prdctrcspsi=ones(szhloss,szhloss2);
 prdctrd=ones(szhloss,szhloss2);
 prdctrhloss=ones(szhloss,szhloss2);
 gpsicc2=zeros(szhloss,szhloss2);
 gpsic2=zeros(szhloss,szhloss2);
+
 
 for i=1:zslmnrs  
     gpsicc2=n^2./sinpsi2(:,:,i);
@@ -117,6 +142,7 @@ for i=1:zslmnrs
     end
     prdctrcspsi=cospsi(:,:,i).*prdctrcspsi;
     prdctrcspsi=cospsi(:,:,i).*prdctrcspsi;
+    
     prdctrd=d(:,:,i).*prdctrd;
 end
 arprdctrcsphi=ar*prdctrcsphi;
@@ -130,8 +156,9 @@ H=zeros(size(d,1),size(d,2));
 ttlHH1=zeros(size(d,1),size(d,2));
 ts=1;
 tspsi=ts*psi;
+
 for k=1:szmtrxlxy
-%ecuacion para el canal VLC LOS H0
+%ecuaci�n para el canal VLC LOS H0
 for i=1:length(rx)
 t = [i length(rx)];
 for j = 1:size(rx,2)
@@ -140,10 +167,15 @@ Hlos(i,j,k)=(gcsi*tspsi(i,j,k)*(m+1)*ar*(z-lzp)^(m+1))/((2*pi*((z-lzp)^2+(x-abs(
 HHlos(i,j,k)=(abs(t(1)*(d(i,j,k)/c))*(rectangularPulse(phi(i,j,k)/smanglmdptnc))* cospsi(i,j,k)*tspsi(i,j,k)*((m+1)*gcsi*((((cosphi(i,j,k))^m))/(2*pi*d(i,j,k)^2))));
 ttlHHlos(i,j)=ttlHHlos(i,j)+HHlos(i,j,k);   
 ttlHHlos2(i,j)=ttlHHlos2(i,j)+Hlos(i,j,k);       
-end  end    end
+ 
+end
+end
+end
 
 HH1 = ptlmncdntrd*HHlos;%Potencia optica recibida 
+
 rho=0.8;%coheficiente de reflexion
+
 for k=1:szmtrxlxy
 %ecuacion para el canal VLC LOS H0
 
@@ -157,57 +189,86 @@ Llq(i,j,k)= ((m+1)*gcsi*tsfilter*resp*d(i,j,k).*((prdctrcsphi(i,j))^m))./(2*pi.*
 Llp(i,j,k)= (rho)/(2*pi*prdctrd(i,j)^2);
 
 HNlos(i,j,k)=((abs(t(1)-((d(i,j,k)))/c)*((cosphi(i,j,k))^m)*prdctrcspsi(i,j)*prdctrcspsi(i,j))/(2*pi*prdctrd(i,j)^2))*ar^szmtrxlxy*ar*(m+1)*rho^szmtrxlxy*tspsi(i,j,k)*gcsi*(rectangularPulse(phi(i,j,k)/smanglmdptnc));
-end  end   end
+
+end
+end
+end
 
 for i=1:zslmnrs
 prdctrhloss=HH1(:,:,i)+prdctrhloss;
 ttlHNlos=ttlHNlos+HNlos(:,:,k);
 ttlHH1=ttlHH1+HH1(:,:,k);
 end
+
 HH=real(ttlHHlos)+real(ttlHNlos);
 %HH=real(ttlHHlos2);%Quite el comentario de esta linea para visualizar el modelo sencillo
 %En 
 %PL=PL1(:,3)+10*log(d/d(3,:));
 
+
+q=1;%????????
+rspnsvty=0.53;%Responsividad de los detectores [A/W]
+mdltndx=0.3;%Indice de modulacion de cada LED
+Ibg=5100e-6;%Corriente de fondo debida a la luz ambiente
+I2=0.52;%Factor de ancho de banda de transductancia
+I3=0.0868;%Factor de ancho de banda
+k=1.38e-23;%Boltzman constant [m^2 kg s^-2 K^-1]
+tk=35;%Absolute temperature
+gol=1;%open loop voltage gain  ������
+cpd=1;%Capacitancia del fotodetector por unidad de area  ������
+FET=1;%FET channel noise ������
+B=18000;%Ancho de banda del filtro electrico que sigue el fotodetector [Hz] ������
+gm=1;% �������������
+%Señal electrica recibida
+
 Ad = (10)*randn;
+
+
 Ib=202e-6;% Ruido de fodo de la corriente de interferencia
 N0=2*q*Ib;%Densidad de ruido espectral
 
+
 Rb=1e6;%taza de bit
-Tb=1/Rb;%duración bit
+Tb=1/Rb;%Duracion bit
 sig_length=1e5;% numero de bits
 nsamp=10;% muestras por simbolo
 Tsamp=Tb/nsamp;% sampling time
 
+
 for i=1:length(rx)
-t = [i length(rx)];
+    t = [i length(rx)];
 for j = 1:size(rx,2)  
 rdsht(i,j)=2*q*(rspnsvty*ttlHHlos(i,j)+Ibg*I2);%Ruido shot 
-end end
+
+end
+end
 
 rdthrml=((8*pi*k*tk*cpd*ar*I2*B^2)/gol)+(((16*pi^2*k*tk*FET)/gm)*cpd^2*ar^2*I3*B^3);%Ruido termal
+
 
 njt=rdsht*rdthrml;%Ruido 
 %-------------------------------------
 %ADR'S Angle diversity receiver
-%Para este estudio se realizará el modelo de receptor óptico
-% adr=1 %Fotodiodo sencillo
+
+adr=1 %Fotodiodo sencillo
 % adr=9 % adr co 9 fotodiodos
 % adr=20 %adr con 20 fotodiodos
 H=H+resp*HH.*ttlHH1+njt;
 for ap=1:adr
     
     H=H+resp*HH.*ttlHH1+njt;
-    end
+    
+end
 
 PL=-10*log10(H);
 
 %----------------------------------------------------------
-%DISPERSION DE LA LUZ EN EL INVERNADERO
+%DISPERSION DE LA LUZ 
 
 %De acuerdo con las normas gubernamentales 
+%la concentracion de materia particulada 
 % 10 mg//m^3
-%El material particulado genera absorción y dispersión cuando la luz la
+%El material particulado genera absorcion y dispersion cuando la luz la
 %atraviesa
 
 Elux=IOt*((cosphi).^m);%Iluminancia
@@ -221,11 +282,18 @@ end
 freq=10e9;
 r=1;%radio
 
+%gammam=
+%g1=
+
+%f1=abs(g1(,,))^2;
+%f2=abs(g2(,,))^2;
+
 Ilmnncprll=(Elux.*c^2/(r*4*pi^2))*sin(csilimit);
-% Root mean square RMS delay spread
-% propagacion del retraso cuadrático (RMS) raiz media 
+
+% propagacion del retraso cuadratico (RMS) raiz media 
 
 yjt=zeros(szhloss,szhloss2);
+
 mnxcdly=zeros(szhloss,szhloss2);
 mnxcdly1=zeros(szhloss,szhloss2);
 mnxcdly2=zeros(szhloss,szhloss2);
@@ -236,16 +304,20 @@ RMS=zeros(szhloss,szhloss2);
 
 R_sbc=[];
 R_rmc=[];
+
 [Vmax lmx] = max(sum(H,2));
+
 for i=1:length(rx)
     t = [i length(rx)];
 for j = 1:size(rx,2)
 %Hlmx=lmx(1,1,lzi);
+
 SINR(i,j) = (Pled*(H(i,j))^2)/( (Pled*(sum(H(:,j))-H(i,j)))^2 + N*4);
 %% Select best combining
 SINR_sbc = max(SINR);
 
 R_sbc(i,j) = BW*log2(1+SINR(i,j));
+
 %% Equal gain combining 
 ssH=sum(sum(H));
 sHi=sum(H(i,:));
@@ -260,41 +332,85 @@ R_egc(i,j) = BW*log2(1+SINR_egc);
 %% Calcular el peso del usuario
 w = zeros(1,lzi);
 denom = 0;
-num = 0;        
+num = 0;
+        
 w = ((Pled*H(i,j))^2)/( (Pled*(sum(H(:,j))-H(i,j)))^2 + N);
         
 %w = w/norm(w);
 for pd = 1:lzi
 denom = denom + (Pled*w*(sum(H(:,j))-H(i,j)))^2 + w^2*N;
-end
-                  
+end    
+        
 num = (Pled*sum(w.*H(pd,j)))^2;
 SINR_rmc(i,j) = num/denom;
+
+%ttlHHlos(i,j)=ttlHHlos(i,j)*abs((t(1)-d(i,j)/c));
+
+
 mnxcdly1=mnxcdly1+t(1)*ttlHHlos.^2;
 mnxcdly2=ttlHHlos;       
-end end  
+%summnx=t(i)-
+
+end
+end  
 
 R_rmc = BW*log2(1+SINR_rmc);     
+
 mnxcdly=mnxcdly1./mnxcdly2;
+
 for i=1:length(rx)
     t = [i length(rx)];
 for j = 1:size(rx,2)
 %RMS DELAY spread
 mnxcdly3=mnxcdly3+(t(1)-mnxcdly).^2;
-end end
+
+end
+end
 
 RMS=sqrt((mnxcdly1.*ttlHHlos.^2)./mnxcdly3);%RMS dealy spread
+
+% EbN0=1:12;
+% for i=1:length(rx)
+%    
+% for j = 1:size(rx,2)
+%     %t = [i length(rx)];
+% 
+% P_avg(i,j)=sqrt(N0*Rb*SINR(i,j)/(2*rspnsvty^2));%promedio de potencia optica transmitida
+% i_peak(i,j)=2*rspnsvty*P_avg(i,j);%pico de amplitud electrica
+% Ep(i,j)=i_peak(i)^2*Tb;
+% sgma(i,j)=sqrt(N0/2/Tsamp);%varianza de ruido
+% 
+% pt=ones(1,nsamp)*i_peak(i,j);
+% 
+% rt=pt;%filtro del recibidor igualado a pt
+% OOK=randi(1,sig_length);
+% 
+% Tx_signal=rectpulse(OOK,nsamp)*i_peak(i,j);%pulso
+% Rx_signal=rspnsvty*Tx_signal+sgma(i,j)*randn(1,length(Tx_signal));%se�al recibida
+% MF_out=conv(Rx_signal,rt)*Tsamp;
+% MF_out_downsamp=MF_out(nsamp:nsamp:end);
+% MF_out_downsamp=MF_out_downsamp(1:sig_length);
+% 
+% Rx_th=zeros(1,sig_length);
+% Rx_th(find(MF_out_downsamp>Ep(i,j)/2))=1;
+% 
+% [nerr ber(i,j)]=biterr(OOK,Rx_th);
+% % calcular BER bit error ratio
+% 
+% end
+% end
 
 figure(1);%Graficar
 surf(rx,ry,100*log10(real(prdctrhloss)),100*log10(real(prdctrhloss)),'EdgeColor','none');%prdctrhloss=HH1(:,:,i).*prdctrhloss -> productoria
 colorbar
 xlabel({'Longitud x','(metros)'});
 ylabel ({'Longitud y','(metros)'});
-zlabel ({'Potencia óptica','(Watt)'});
+zlabel ({'Potencia optica','(Watt)'});
 xlim([-x/2,x/2])
 ylim([-y/2,y/2])
-title({'Potencia óptica recibida por el tranceptor p aportada por i luminarias '});
+title({'Potencia optica recibida por el tranceptor p aportada por iluminarias '});
 hold off
+
 
 % figure(2)
 % surf(rx,ry,real(H),real(H),'EdgeColor','none');%Graficar
@@ -306,18 +422,21 @@ hold off
 % zlabel ({'Respuesta del canal','( )'});
 % xlim([-x/2,x/2])
 % ylim([-y/2,y/2])
-% title({'Hlos Canal de respuesta entre i luminarias y un receptor p'});
+% title({'Hlos Canal de respuesta entre iluminarias y un receptor p'});
 % 
 % figure(3)
 % surf(rx,ry,real(ttlHHlos),real(ttlHHlos),'EdgeColor','none');%Graficar
 % %Graficar
+% 
 % colorbar
 % xlabel({'Longitud x','(metros)'});
 % ylabel ({'Longitud y','(metros)'});
 % zlabel ({'Respuesta del canal','( )'});
 % xlim([-x/2,x/2])
 % ylim([-y/2,y/2])
-% title({'Hlos Canal de respuesta entre i luminarias y un receptor p asumiendo...'});
+% title({'Hlos Canal de respuesta entre iluminarias y un receptor p asumiendo...'});
+% 
+% 
 % 
 % figure(4)
 % surf(rx,ry,real(ttlHNlos),real(ttlHNlos),'EdgeColor','none')
@@ -326,6 +445,7 @@ hold off
 % ylabel ({'Longitud y','(metros)'});
 % zlabel ({'HHNlos','(dB)'});
 % title({'HHNlos'});
+% 
 % 
 % figure(5)
 % for i=1:szmtrxlxy
@@ -339,3 +459,147 @@ hold off
 % xlim([-x/2,x/2])
 % ylim([-y/2,y/2])
 % title({'Iluminancia o flujo luminoso aportada por cada luminaria en el invernadero'});
+% 
+% figure(6)
+% surf(rx,ry,real(ttlElux),real(ttlElux),'EdgeColor','none');%Graficar
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'Iluminancia','(lux)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Iluminancia o flujo luminoso total en el invernadero'});
+% 
+% figure(7)
+% surf(rx,ry,real(ttllmnsintsty),real(ttllmnsintsty),'EdgeColor','none');%Graficar
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'Intensidad luminosa','(cd)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Intensidad luminosa (cd)'});
+% 
+% figure(8)
+% for i=1:szmtrxlxy
+% surf(rx,ry,real(lmnsintsty(:,:,i)),real(lmnsintsty(:,:,i)),'EdgeColor','none');%Graficar
+% hold on
+% end
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'Intensidad luminosa','(cd)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Intensidad luminosa aportada por cada luminaria '});
+% 
+% figure(9)
+% surf(rx,ry,real(PL),real(PL),'EdgeColor','none');%Graficar
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'path n loss','(dB)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'path loss PL'});
+% 
+% figure(10)
+% surf(rx,ry,real(rdsht),real(rdsht),'EdgeColor','none');%Graficar
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'Ruido shot','( )'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Ruido shot sigma^2'});
+% 
+% figure(11)
+% surf(rx,ry,real(SINR),real(SINR),'EdgeColor','none');%Graficar
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'SINR','(dB)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Signal to noise ratio SINR'});
+% 
+% figure(12)
+% %surf(rx,ry,SINR_egcmtrx);%Graficar
+% surf(rx,ry,real(SINR_egcmtrx),real(SINR_egcmtrx),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'SINR EGC','(dB)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Signal to noise ratio SINR EGC'});
+% 
+% figure(13)
+% plot(rx(1,:),SINR_sbc);%Graficar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% zlabel ({'SINR SBC','(dB)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% title({'Signal to noise ratio SINR SBC max(SINR)','Max SINR'});
+% 
+% figure(14)
+% surf(rx,ry,real(R_sbc),real(R_sbc),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% zlabel ({'R SBC','( )'});
+% title({'R SBC'});
+% 
+% 
+% figure(15)
+% surf(rx,ry,real(R_egc),real(R_egc),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% zlabel ({'R ECG','( )'});
+% title({'R EGC'});
+% 
+% figure(16)
+% surf(rx,ry,real(SINR_rmc),real(SINR_rmc),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% zlabel ({'R ECG','(dB)'});
+% title({'SINRR RMC'});
+%  
+% figure(17)
+% surf(rx,ry,real(R_rmc),real(R_rmc),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% zlabel ({'R RMC','(dB)'});
+% title({'R RMC'});
+%  
+% figure(18)
+% surf(rx,ry,real(RMS),real(RMS),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% zlabel ({'RMS','(dB)'});
+% title({'RMS'});
+% 
+% figure(19)
+% surf(rx,ry,real(ber),real(ber),'EdgeColor','none')
+% colorbar
+% xlabel({'Longitud x','(metros)'});
+% ylabel ({'Longitud y','(metros)'});
+% xlim([-x/2,x/2])
+% ylim([-y/2,y/2])
+% zlabel ({'BER','(dB)'});
+% title({'BER'});
